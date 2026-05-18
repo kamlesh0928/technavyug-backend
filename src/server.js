@@ -15,11 +15,18 @@ const startServer = async () => {
     const server = app.listen(PORT, "0.0.0.0", () => {
       Logger.info(`Server running on port ${PORT}`);
 
-      // We safely use alter: true here because the server is already online and won't crash.
-      sequelize
-        .sync({ alter: true })
-        .then(() => Logger.info("Database synced successfully automatically."))
-        .catch((err) => Logger.error("Automatic database sync failed:", err));
+      // In development, auto-sync schema changes for convenience.
+      // In production, migrations handle all schema changes — never use alter: true.
+      if (process.env.NODE_ENV !== "production") {
+        sequelize
+          .sync({ alter: true })
+          .then(() => Logger.info("Database synced successfully (dev mode)."))
+          .catch((err) => Logger.error("Automatic database sync failed:", err));
+      } else {
+        Logger.info(
+          "Production mode — skipping auto-sync. Use migrations instead.",
+        );
+      }
     });
 
     server.timeout = 600000;
