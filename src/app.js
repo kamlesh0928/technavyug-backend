@@ -32,7 +32,12 @@ const app = express();
 app.set("trust proxy", 1);
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: false,
+  }),
+);
 
 // CORS configuration
 app.use(
@@ -41,6 +46,8 @@ app.use(
       .filter(Boolean)
       .map((url) => url.trim()),
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
