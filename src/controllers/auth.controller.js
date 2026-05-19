@@ -190,6 +190,11 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "Account has been blocked" });
     }
 
+    if (!user.password) {
+      Logger.warn("Login attempt with email for a Google-created account", { email });
+      return res.status(400).json({ message: "This account was created using Google. Please use Google Sign-In or reset your password." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       Logger.warn("Invalid password attempt", { email });
