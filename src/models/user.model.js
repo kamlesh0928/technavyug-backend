@@ -18,7 +18,16 @@ const User = sequelize.define("User", {
   },
   password: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
+  },
+  googleId: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    unique: true,
+  },
+  authProvider: {
+    type: DataTypes.ENUM("local", "google"),
+    defaultValue: "local",
   },
   role: {
     type: DataTypes.ENUM(
@@ -26,6 +35,7 @@ const User = sequelize.define("User", {
       "Instructor",
       "Admin",
       "Sub Admin",
+      "Super Admin",
       "Guest",
     ),
     defaultValue: "Student",

@@ -30,13 +30,13 @@ router.post(
 // Admin routes
 router.get(
   "/",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   ticketController.listAllTickets,
 );
 
 router.patch(
   "/:id/status",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   ticketController.updateTicketStatus,
 );
 

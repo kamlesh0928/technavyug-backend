@@ -1,4 +1,5 @@
 import { Op } from "sequelize";
+import bcrypt from "bcryptjs";
 import { User } from "../../models/index.js";
 import { getPagination, getPaginatedResponse } from "../../utils/pagination.js";
 import Logger from "../../utils/logger.js";
@@ -63,13 +64,26 @@ const updateUser = async (req, res) => {
 
     if (name !== undefined) user.name = name;
 
-    // Only 'Admin' can change roles, 'Sub Admin' cannot
+    // Only 'Admin' and 'Super Admin' can change roles, 'Sub Admin' cannot
     if (role !== undefined) {
-      if (req.user.role !== "Admin") {
+      if (!["Super Admin", "Admin"].includes(req.user.role)) {
         return res
           .status(403)
           .json({ message: "Only Admin can change user roles" });
       }
+
+      if (role === "Super Admin" && req.user.role !== "Super Admin") {
+        return res.status(403).json({
+          message: "Only a Super Admin can assign the Super Admin role",
+        });
+      }
+
+      if (user.role === "Super Admin" && req.user.role !== "Super Admin") {
+        return res
+          .status(403)
+          .json({ message: "Cannot change the role of a Super Admin" });
+      }
+
       user.role = role;
     }
 
@@ -131,7 +145,12 @@ const deleteUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.role === "Admin") {
+    if (user.role === "Super Admin" && req.user.role !== "Super Admin") {
+      return res
+        .status(403)
+        .json({ message: "Cannot delete a Super Admin user" });
+    }
+    if (user.role === "Admin" && req.user.role !== "Super Admin") {
       return res.status(403).json({ message: "Cannot delete an Admin user" });
     }
 
@@ -154,7 +173,12 @@ const blockUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.role === "Admin") {
+    if (user.role === "Super Admin" && req.user.role !== "Super Admin") {
+      return res
+        .status(403)
+        .json({ message: "Cannot block a Super Admin user" });
+    }
+    if (user.role === "Admin" && req.user.role !== "Super Admin") {
       return res.status(403).json({ message: "Cannot block an Admin user" });
     }
 
@@ -190,9 +214,56 @@ const unblockUser = async (req, res) => {
   }
 };
 
+const createUser = async (req, res) => {
+  try {
+    const { name, email, password, role, status, phone, bio } = req.body;
+
+    if (!name || !email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Name, email and password are required" });
+    }
+
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "User with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: role || "Student",
+      status: status || "Active",
+      phone: phone || null,
+      bio: bio || null,
+      emailVerified: true,
+    });
+
+    const { password: _, ...userData } = user.get({ plain: true });
+
+    Logger.info("User created by admin", {
+      userId: user.id,
+      createdBy: req.user.id,
+    });
+
+    res
+      .status(201)
+      .json({ message: "User created successfully", data: userData });
+  } catch (error) {
+    Logger.error("Error creating user", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export default {
   listUsers,
   getUserById,
+  createUser,
   updateUser,
   deleteUser,
   blockUser,

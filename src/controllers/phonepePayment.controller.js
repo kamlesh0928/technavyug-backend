@@ -47,15 +47,13 @@ const generateInvoiceNumber = () => {
 };
 
 const getCompanyInfo = () => ({
-  name: process.env.COMPANY_NAME || "Technavyug Education",
+  name: process.env.COMPANY_NAME || "Technavyug Pvt. Ltd.",
   gstin: process.env.COMPANY_GSTIN || "",
   address: process.env.COMPANY_ADDRESS || "India",
 });
 
 const getFrontendUrl = () =>
-  process.env.FRONTEND_URL_1 ||
-  process.env.FRONTEND_URL_2 ||
-  "http://localhost:5173";
+  process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2;
 
 // Helper: Calculate GST for a line item
 const calculateItemGST = (price, quantity, gstRate = GST_RATE) => {
@@ -87,7 +85,7 @@ const applyCoupon = async (couponCode, subtotal, userId, applicableTo) => {
   });
   if (existing) return { discountAmount: 0, couponId: null };
 
-  let discount = 0;
+  let discount;
   if (coupon.discountType === "percentage") {
     discount = (subtotal * parseFloat(coupon.discountValue)) / 100;
     if (coupon.maxDiscount)
@@ -745,7 +743,7 @@ const getTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     if (
       transaction.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     )
       return res.status(403).json({ message: "Not authorized" });
 

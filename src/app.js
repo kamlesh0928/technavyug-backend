@@ -24,13 +24,20 @@ import phonepePaymentRoutes from "./routes/phonepePayment.route.js";
 import addressRoutes from "./routes/address.route.js";
 import couponRoutes from "./routes/coupon.route.js";
 
+import Logger from "./utils/logger.js";
+
 const app = express();
 
 // Trust proxy for rate-limiter when behind a reverse proxy
 app.set("trust proxy", 1);
 
 // Security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: false,
+  }),
+);
 
 // CORS configuration
 app.use(
@@ -39,6 +46,8 @@ app.use(
       .filter(Boolean)
       .map((url) => url.trim()),
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -94,12 +103,12 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || err.status || 500;
   const message = err.isOperational ? err.message : "Internal Server Error";
 
   if (process.env.NODE_ENV !== "production") {
-    console.error(err);
+    Logger.error(err);
   }
 
   res.status(statusCode).json({

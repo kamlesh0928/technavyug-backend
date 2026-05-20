@@ -27,7 +27,7 @@ const orderConfirmationAdminTemplate = (userName, userEmail, order) => {
     .join(", ");
 
   const subtotal = parseFloat(order.subtotal || 0).toFixed(2);
-  const gstAmount = parseFloat(order.gstAmount || 0).toFixed(2);
+  const _gstAmount = parseFloat(order.gstAmount || 0).toFixed(2);
   const cgst = parseFloat(order.cgstAmount || 0).toFixed(2);
   const sgst = parseFloat(order.sgstAmount || 0).toFixed(2);
   const discount = parseFloat(order.discountAmount || 0);
@@ -47,21 +47,61 @@ const orderConfirmationAdminTemplate = (userName, userEmail, order) => {
         <!-- Order Info -->
         <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
           <tr>
-            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px; width:120px;">Order #</td>
-            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">${order.orderNumber}</td>
+            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px; width:140px;">Order #</td>
+            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">
+              ${order.orderNumber}
+            </td>
           </tr>
+
           ${
             order.invoiceNumber
               ? `
           <tr>
-            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">Invoice #</td>
-            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">${order.invoiceNumber}</td>
+            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">
+              Invoice #
+            </td>
+            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">
+              ${order.invoiceNumber}
+            </td>
           </tr>`
               : ""
           }
+
+          ${
+            order.paymentId
+              ? `
           <tr>
-            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">Customer</td>
-            <td style="padding:8px 0; color:#111827; font-size:13px;">${userName} (${userEmail})</td>
+            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">
+              Payment ID
+            </td>
+            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">
+              ${order.paymentId}
+            </td>
+          </tr>`
+              : ""
+          }
+
+          ${
+            order.paymentMethod
+              ? `
+          <tr>
+            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">
+              Payment Method
+            </td>
+            <td style="padding:8px 0; color:#111827; font-size:13px; font-weight:600;">
+              ${order.paymentMethod}
+            </td>
+          </tr>`
+              : ""
+          }
+
+          <tr>
+            <td style="padding:8px 0; font-weight:700; color:#6b7280; font-size:13px;">
+              Customer
+            </td>
+            <td style="padding:8px 0; color:#111827; font-size:13px;">
+              ${userName} (${userEmail})
+            </td>
           </tr>
         </table>
 
@@ -128,7 +168,7 @@ const orderConfirmationAdminTemplate = (userName, userEmail, order) => {
 
       <div style="background:#f8fafc; padding:14px 30px; border-top:1px solid #e5e7eb; text-align:center;">
         <p style="font-size:11px;color:#9ca3af;margin:0;">
-          &copy; ${new Date().getFullYear()} Technavyug Education. Admin Notification.
+          &copy; ${new Date().getFullYear()} Technavyug Pvt. Ltd. Admin Notification.
         </p>
       </div>
 

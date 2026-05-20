@@ -14,10 +14,6 @@ router.post(
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
-  body("role")
-    .optional()
-    .isIn(["Student", "Instructor"])
-    .withMessage("Invalid role"),
   validate,
   authController.register,
 );
@@ -33,6 +29,8 @@ router.post(
   validate,
   authController.login,
 );
+
+router.post("/google", authController.googleLogin);
 
 router.post("/refresh-token", authController.refreshAccessToken);
 router.post("/logout", authController.logout);
@@ -55,6 +53,24 @@ router.post(
 
 // Protected routes
 router.get("/me", authenticate, authController.getMe);
+
+router.post(
+  "/add-password",
+  authenticate,
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+  validate,
+  authController.addPassword,
+);
+
+router.post(
+  "/update-role",
+  authenticate,
+  body("role").isIn(["Student", "Instructor"]).withMessage("Invalid role"),
+  validate,
+  authController.updateRole
+);
 
 router.put(
   "/profile",

@@ -10,6 +10,7 @@ import {
   generateAccessToken,
   generateRefreshToken,
 } from "../services/token.service.js";
+import admin from "../config/firebase.js";
 
 import verificationEmailTemplate from "../templates/email/verifyEmail.template.js";
 import resetPasswordTemplate from "../templates/email/resetPassword.template.js";
@@ -18,7 +19,7 @@ import Logger from "../utils/logger.js";
 
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
@@ -28,14 +29,12 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const allowedRoles = ["Student", "Instructor"];
-    const assignedRole = allowedRoles.includes(role) ? role : "Student";
-
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: assignedRole,
+      role: "Student", // Default to Student role
+      authProvider: "local",
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -47,9 +46,7 @@ const register = async (req, res) => {
     });
 
     const frontendUrl =
-      process.env.FRONTEND_URL_1 ||
-      process.env.FRONTEND_URL_2 ||
-      "http://localhost:5173";
+      process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2;
     const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
     try {
       await sendEmail(
@@ -57,7 +54,7 @@ const register = async (req, res) => {
         "Verify your email",
         verificationEmailTemplate(user.name, verificationUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send verification email, but user was created", {
         userId: user.id,
       });
@@ -105,9 +102,7 @@ const resendVerificationEmail = async (req, res) => {
     });
 
     const frontendUrl =
-      process.env.FRONTEND_URL_1 ||
-      process.env.FRONTEND_URL_2 ||
-      "http://localhost:5173";
+      process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2;
     const verificationUrl = `${frontendUrl}/verify-email?token=${verificationToken}`;
 
     await sendEmail(
@@ -192,12 +187,21 @@ const login = async (req, res) => {
       return res.status(403).json({ message: "Account has been blocked" });
     }
 
+    if (!user.password) {
+      return res.status(400).json({
+        message:
+          "This account was created using Google Sign-In. Please login with Google or add a password first.",
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       Logger.warn("Invalid password attempt", { email });
-      return res
-        .status(401)
-        .json({ message: "Email or password is incorrect" });
+
+      return res.status(401).json({
+        message: "Email or password is incorrect",
+      });
     }
 
     if (user.emailVerified == 0) {
@@ -240,6 +244,9 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+
+        authProvider: user.authProvider,
+        passwordSet: !!user.password,
       },
     });
   } catch (error) {
@@ -299,10 +306,18 @@ const logout = async (req, res) => {
     const refreshToken = req.body?.refreshToken || req.cookies?.refreshToken;
 
     if (refreshToken) {
-      await RefreshToken.update(
-        { isRevoked: true },
-        { where: { token: refreshToken } },
-      );
+      try {
+        await RefreshToken.update(
+          { isRevoked: true },
+          { where: { token: refreshToken } },
+        );
+      } catch (revocationError) {
+        Logger.error(
+          "Failed to revoke refresh token during logout",
+          revocationError,
+        );
+        // Continue with logout anyway
+      }
     }
 
     res.clearCookie("refreshToken");
@@ -312,6 +327,67 @@ const logout = async (req, res) => {
   } catch (error) {
     Logger.error("Error during user logout", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const addPassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        message: "Password is required",
+      });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Prevent overwrite
+    if (user.password) {
+      return res.status(400).json({
+        message: "Password already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    Logger.info("Password added successfully", {
+      userId: user.id,
+    });
+
+    res.status(200).json({
+      message: "Password added successfully",
+
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+
+        authProvider: user.authProvider,
+        passwordSet: true,
+        googleId: user.googleId,
+      },
+    });
+  } catch (error) {
+    Logger.error("Error adding password", error);
+
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -334,14 +410,14 @@ const forgotPassword = async (req, res) => {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
 
-    const resetUrl = `${process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2 || "http://localhost:5173"}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2}/reset-password?token=${token}`;
     try {
       await sendEmail(
         user.email,
         "Reset Password",
         resetPasswordTemplate(user.name, resetUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send password reset email", { email });
     }
 
@@ -431,7 +507,7 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     Logger.info("User profile updated", { userId: user.id });
     res
       .status(200)
@@ -502,12 +578,177 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({
+        message: "Firebase ID token is required",
+      });
+    }
+
+    // Verify Firebase token
+    let decodedToken;
+
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (firebaseError) {
+      Logger.warn("Invalid Firebase token", {
+        error: firebaseError.message,
+      });
+
+      return res.status(401).json({
+        message: "Invalid Google token",
+      });
+    }
+
+    const { email, name, picture, uid } = decodedToken;
+
+    let user = await User.findOne({
+      where: { email },
+    });
+
+    let isNewUser = false;
+
+    // CREATE NEW USER
+    if (!user) {
+      isNewUser = true;
+
+      user = await User.create({
+        name: name || "Google User",
+        email,
+        googleId: uid,
+        authProvider: "google",
+        emailVerified: true,
+        avatar: picture,
+        role: "Student",
+        lastLoginAt: new Date(),
+      });
+
+      Logger.info("New user registered via Google", {
+        userId: user.id,
+      });
+    } else {
+      // BLOCK CHECK
+      if (user.status === "Blocked") {
+        Logger.warn("Blocked user attempted Google login", {
+          email,
+        });
+
+        return res.status(403).json({
+          message: "Account has been blocked",
+        });
+      }
+
+      // LINK GOOGLE ACCOUNT IF NOT LINKED
+      if (!user.googleId) {
+        user.googleId = uid;
+      }
+
+      // UPDATE AUTH PROVIDER
+      if (!user.authProvider) {
+        user.authProvider = "google";
+      }
+
+      // UPDATE AVATAR
+      if (!user.avatar && picture) {
+        user.avatar = picture;
+      }
+
+      user.emailVerified = true;
+      user.lastLoginAt = new Date();
+      await user.save();
+
+      Logger.info("Existing user logged in via Google", {
+        userId: user.id,
+      });
+    }
+
+    // JWT TOKENS
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user, true);
+    const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000;
+
+    await RefreshToken.create({
+      userId: user.id,
+      token: refreshToken,
+      expiresAt: new Date(Date.now() + refreshTokenMaxAge),
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: refreshTokenMaxAge,
+    });
+
+    return res.status(200).json({
+      accessToken,
+
+      refreshToken,
+
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+        authProvider: user.authProvider,
+        passwordSet: !!user.password,
+        emailVerified: user.emailVerified,
+      },
+      isNewUser,
+    });
+  } catch (error) {
+    Logger.error("Error during Google login", error);
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+};
+
+const updateRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.role !== "Guest") {
+      return res.status(400).json({ message: "Role is already set" });
+    }
+
+    const allowedRoles = ["Student", "Instructor"];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: "Invalid role selected" });
+    }
+
+    user.role = role;
+    await user.save();
+
+    const { password: _password, ...userData } = user.toJSON();
+    Logger.info("User completed role selection", { userId: user.id, role });
+    res
+      .status(200)
+      .json({ message: "Role updated successfully", user: userData });
+  } catch (error) {
+    Logger.error("Error updating user role", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export default {
   register,
   verifyEmail,
   login,
+  googleLogin,
   refreshAccessToken,
   logout,
+  addPassword,
   forgotPassword,
   resetPassword,
   getMe,
@@ -515,4 +756,5 @@ export default {
   changePassword,
   deleteAccount,
   resendVerificationEmail,
+  updateRole,
 };

@@ -17,11 +17,15 @@ router.post(
 );
 
 // Admin CRUD
-router.get("/", authorize("Admin", "Sub Admin"), couponController.listCoupons);
+router.get(
+  "/",
+  authorize("Super Admin", "Admin", "Sub Admin"),
+  couponController.listCoupons,
+);
 
 router.post(
   "/",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("code").notEmpty().withMessage("Coupon code is required"),
   body("discountType")
     .isIn(["percentage", "flat"])
@@ -36,12 +40,12 @@ router.post(
 
 router.put(
   "/:id",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   couponController.updateCoupon,
 );
 router.delete(
   "/:id",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   couponController.deleteCoupon,
 );
 

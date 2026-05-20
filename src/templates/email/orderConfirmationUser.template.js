@@ -47,8 +47,20 @@ const orderConfirmationUserTemplate = (name, order) => {
 
         <p style="font-size:15px;color:#374151;line-height:1.6; margin:0 0 20px 0;">
           Hi <b>${name}</b>,<br><br>
-          Thank you for your purchase! Your order <b style="color:#059669;">${order.orderNumber}</b> has been confirmed.
-          ${order.invoiceNumber ? `<br>Invoice: <b>${order.invoiceNumber}</b>` : ""}
+          Thank you for your purchase! Your order 
+            <b style="color:#059669;">
+              ${order.orderNumber}
+            </b> has been confirmed.
+
+            ${order.invoiceNumber ? `<br>Invoice: <b>${order.invoiceNumber}</b>` : ""}
+
+            ${order.paymentId ? `<br>Transaction ID: <b>${order.paymentId}</b>` : ""}
+
+            ${
+              order.paymentMethod
+                ? `<br>Payment Method: <b>${order.paymentMethod}</b>`
+                : ""
+            }
         </p>
 
         <!-- Items Table -->
@@ -115,7 +127,7 @@ const orderConfirmationUserTemplate = (name, order) => {
       <!-- Footer -->
       <div style="background:#f8fafc; padding:16px; border-top:1px solid #e5e7eb; text-align:center;">
         <p style="font-size:11px;color:#9ca3af;margin:0;">
-          &copy; ${new Date().getFullYear()} Technavyug Education. All rights reserved.
+          &copy; ${new Date().getFullYear()} Technavyug Pvt. Ltd. All rights reserved.
         </p>
       </div>
 

@@ -22,7 +22,7 @@ const optionalAuth = async (req, res, next) => {
         req.user = user;
       }
     }
-  } catch (err) {
+  } catch {
     // Silently ignore auth errors - just continue as unauthenticated
   }
   next();
@@ -37,7 +37,7 @@ router.get("/blogs/:identifier", cmsController.getBlogByIdOrSlug);
 router.post(
   "/blogs",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("title").notEmpty().withMessage("Title is required"),
   body("content").notEmpty().withMessage("Content is required"),
   validate,
@@ -47,14 +47,14 @@ router.post(
 router.put(
   "/blogs/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   cmsController.updateBlog,
 );
 
 router.delete(
   "/blogs/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   cmsController.deleteBlog,
 );
 
@@ -62,7 +62,7 @@ router.delete(
 router.post(
   "/blogs/upload-image",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   uploadImage,
   cmsController.uploadBlogImage,
 );
@@ -75,7 +75,7 @@ router.get("/faqs", cmsController.listFaqs);
 router.post(
   "/faqs",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("question").notEmpty().withMessage("Question is required"),
   body("answer").notEmpty().withMessage("Answer is required"),
   validate,
@@ -85,14 +85,14 @@ router.post(
 router.put(
   "/faqs/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   cmsController.updateFaq,
 );
 
 router.delete(
   "/faqs/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   cmsController.deleteFaq,
 );
 

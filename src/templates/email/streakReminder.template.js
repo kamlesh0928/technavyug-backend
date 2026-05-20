@@ -41,7 +41,7 @@ const streakReminderTemplate = (name, currentStreak) => {
       <hr style="margin:30px 0">
 
       <p style="font-size:12px;color:#999;">
-        © ${new Date().getFullYear()} Technavyug Platform
+        © ${new Date().getFullYear()} Technavyug Pvt. Ltd. Platform
       </p>
 
     </div>
