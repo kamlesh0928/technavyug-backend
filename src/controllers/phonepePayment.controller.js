@@ -85,7 +85,7 @@ const applyCoupon = async (couponCode, subtotal, userId, applicableTo) => {
   });
   if (existing) return { discountAmount: 0, couponId: null };
 
-  let discount = 0;
+  let discount;
   if (coupon.discountType === "percentage") {
     discount = (subtotal * parseFloat(coupon.discountValue)) / 100;
     if (coupon.maxDiscount)
@@ -743,7 +743,7 @@ const getTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     if (
       transaction.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     )
       return res.status(403).json({ message: "Not authorized" });
 

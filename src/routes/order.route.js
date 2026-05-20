@@ -25,13 +25,17 @@ router.post(
 router.get("/my", orderController.getMyOrders);
 
 // Admin routes (must be before /:id to prevent conflicts)
-router.get("/", authorize("Admin", "Sub Admin"), orderController.listAllOrders);
+router.get(
+  "/",
+  authorize("Super Admin", "Admin", "Sub Admin"),
+  orderController.listAllOrders,
+);
 
 router.get("/:id", orderController.getOrderById);
 
 router.patch(
   "/:id/status",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("status").notEmpty().withMessage("Status is required"),
   validate,
   orderController.updateOrderStatus,

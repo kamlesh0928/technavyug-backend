@@ -33,7 +33,7 @@ const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: "Guest", // Force role selection after email verification and login
+      role: "Student", // Default to Student role
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -53,7 +53,7 @@ const register = async (req, res) => {
         "Verify your email",
         verificationEmailTemplate(user.name, verificationUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send verification email, but user was created", {
         userId: user.id,
       });
@@ -343,7 +343,7 @@ const forgotPassword = async (req, res) => {
         "Reset Password",
         resetPasswordTemplate(user.name, resetUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send password reset email", { email });
     }
 
@@ -433,7 +433,7 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     Logger.info("User profile updated", { userId: user.id });
     res
       .status(200)
@@ -506,7 +506,7 @@ const deleteAccount = async (req, res) => {
 
 const googleLogin = async (req, res) => {
   try {
-    const { idToken, role } = req.body;
+    const { idToken, role: _role } = req.body;
 
     if (!idToken) {
       return res.status(400).json({ message: "Firebase ID token is required" });
@@ -529,14 +529,14 @@ const googleLogin = async (req, res) => {
 
     if (!user) {
       isNewUser = true;
-      // Create new user with Guest role initially
+      // Create new user with Student role directly
       user = await User.create({
         name: name || "Google User",
         email: email,
         googleId: uid,
         emailVerified: true, // Google emails are already verified
         avatar: picture,
-        role: "Guest", // Force them to select role on next screen
+        role: "Student", // Default to Student role directly
       });
       Logger.info("New user registered via Google", { userId: user.id });
     } else {
@@ -616,9 +616,11 @@ const updateRole = async (req, res) => {
     user.role = role;
     await user.save();
 
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     Logger.info("User completed role selection", { userId: user.id, role });
-    res.status(200).json({ message: "Role updated successfully", user: userData });
+    res
+      .status(200)
+      .json({ message: "Role updated successfully", user: userData });
   } catch (error) {
     Logger.error("Error updating user role", error);
     res.status(500).json({ message: "Internal Server Error" });

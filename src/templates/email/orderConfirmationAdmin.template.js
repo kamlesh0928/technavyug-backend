@@ -27,7 +27,7 @@ const orderConfirmationAdminTemplate = (userName, userEmail, order) => {
     .join(", ");
 
   const subtotal = parseFloat(order.subtotal || 0).toFixed(2);
-  const gstAmount = parseFloat(order.gstAmount || 0).toFixed(2);
+  const _gstAmount = parseFloat(order.gstAmount || 0).toFixed(2);
   const cgst = parseFloat(order.cgstAmount || 0).toFixed(2);
   const sgst = parseFloat(order.sgstAmount || 0).toFixed(2);
   const discount = parseFloat(order.discountAmount || 0);

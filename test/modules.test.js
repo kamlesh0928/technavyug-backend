@@ -63,7 +63,7 @@ describe("Admin User Management", () => {
   let admin, student, token;
 
   beforeEach(async () => {
-    admin = await createUser({ role: "Admin", email: "admin@test.com" });
+    admin = await createUser({ role: "Super Admin", email: "admin@test.com" });
     student = await createUser({ role: "Student", email: "student@test.com" });
     token = getAuthToken(admin);
   });
@@ -166,7 +166,7 @@ describe("Category Management", () => {
 // ===== Course Management Tests =====
 
 describe("Course Management", () => {
-  let instructor, student, adminToken, instructorToken, studentToken, category;
+  let instructor, student, _adminToken, instructorToken, studentToken, category;
 
   beforeEach(async () => {
     const admin = await createUser({ role: "Admin", email: "admin@test.com" });
@@ -176,7 +176,7 @@ describe("Course Management", () => {
     });
     student = await createUser({ role: "Student", email: "student@test.com" });
 
-    adminToken = getAuthToken(admin);
+    _adminToken = getAuthToken(admin);
     instructorToken = getAuthToken(instructor);
     studentToken = getAuthToken(student);
 

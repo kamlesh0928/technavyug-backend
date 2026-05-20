@@ -22,7 +22,7 @@ router.get("/progress/:courseId", enrollmentController.getCourseProgress);
 // Admin: view enrollments for a course
 router.get(
   "/courses/:courseId/list",
-  authorize("Admin", "Sub Admin", "Instructor"),
+  authorize("Super Admin", "Admin", "Sub Admin", "Instructor"),
   enrollmentController.getCourseEnrollments,
 );
 

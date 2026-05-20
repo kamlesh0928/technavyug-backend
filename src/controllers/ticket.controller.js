@@ -77,7 +77,7 @@ const getTicketById = async (req, res) => {
     // Users can only view their own tickets (unless admin)
     if (
       ticket.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -99,7 +99,7 @@ const replyToTicket = async (req, res) => {
     // Users can reply to their own tickets; admins can reply to any
     if (
       ticket.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -118,7 +118,7 @@ const replyToTicket = async (req, res) => {
 
     // Auto-update ticket status
     if (
-      ["Admin", "Sub Admin"].includes(req.user.role) &&
+      ["Super Admin", "Admin", "Sub Admin"].includes(req.user.role) &&
       ticket.status === "Open"
     ) {
       ticket.status = "InProgress";

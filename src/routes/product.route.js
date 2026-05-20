@@ -15,7 +15,7 @@ router.get("/:identifier", productController.getProductById);
 router.post(
   "/upload-image",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   uploadImage,
   productController.uploadProductImage,
 );
@@ -23,7 +23,7 @@ router.post(
 router.post(
   "/",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("name").notEmpty().withMessage("Product name is required"),
   body("price").isDecimal().withMessage("Price must be a valid number"),
   validate,
@@ -33,14 +33,14 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   productController.updateProduct,
 );
 
 router.delete(
   "/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   productController.deleteProduct,
 );
 

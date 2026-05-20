@@ -121,7 +121,7 @@ const getPaymentById = async (req, res) => {
 
     if (
       payment.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }

@@ -7,7 +7,6 @@ import app from "../src/app.js";
 import {
   sequelize,
   User,
-  Category,
   Course,
   Section,
   Lecture,

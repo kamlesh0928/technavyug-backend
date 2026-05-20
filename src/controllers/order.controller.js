@@ -166,7 +166,7 @@ const getOrderById = async (req, res) => {
     // Users can only view their own orders (unless admin)
     if (
       order.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }

@@ -15,8 +15,6 @@ const startServer = async () => {
     const server = app.listen(PORT, "0.0.0.0", () => {
       Logger.info(`Server running on port ${PORT}`);
 
-      // In development, auto-sync schema changes for convenience.
-      // In production, migrations handle all schema changes — never use alter: true.
       if (process.env.NODE_ENV !== "production") {
         sequelize
           .sync({ alter: true })
