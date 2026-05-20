@@ -22,7 +22,7 @@ const optionalAuth = async (req, res, next) => {
         req.user = user;
       }
     }
-  } catch (err) {
+  } catch {
     // Silently ignore auth errors - just continue as unauthenticated
   }
   next();

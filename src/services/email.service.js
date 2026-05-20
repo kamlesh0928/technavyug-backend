@@ -36,7 +36,7 @@ const sendEmail = async (to, subject, htmlContent) => {
     return info;
   } catch (error) {
     Logger.error(`Failed to send email to ${to}`, error);
-    throw new Error("Email delivery failed");
+    throw new Error("Email delivery failed", { cause: error });
   }
 };
 

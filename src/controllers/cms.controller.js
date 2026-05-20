@@ -32,7 +32,7 @@ const createBlog = async (req, res) => {
 const listBlogs = async (req, res) => {
   try {
     const { page, limit, offset } = getPagination(req.query);
-    const { status, search, tag } = req.query;
+    const { status, search, tag: _tag } = req.query;
 
     const where = {};
 

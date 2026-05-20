@@ -13,8 +13,6 @@ import {
   Transaction,
   Course,
   Product,
-  Order,
-  OrderItem,
   Enrollment,
 } from "../src/models/index.js";
 

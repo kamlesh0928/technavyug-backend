@@ -85,7 +85,7 @@ const applyCoupon = async (couponCode, subtotal, userId, applicableTo) => {
   });
   if (existing) return { discountAmount: 0, couponId: null };
 
-  let discount = 0;
+  let discount;
   if (coupon.discountType === "percentage") {
     discount = (subtotal * parseFloat(coupon.discountValue)) / 100;
     if (coupon.maxDiscount)

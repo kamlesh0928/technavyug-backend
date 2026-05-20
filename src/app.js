@@ -103,7 +103,7 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || err.status || 500;
   const message = err.isOperational ? err.message : "Internal Server Error";
 

@@ -1,4 +1,3 @@
-import { Op } from "sequelize";
 import { Review, Course, User, Enrollment } from "../models/index.js";
 import { getPagination, getPaginatedResponse } from "../utils/pagination.js";
 import Logger from "../utils/logger.js";

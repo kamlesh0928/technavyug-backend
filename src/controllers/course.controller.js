@@ -5,7 +5,6 @@ import {
   Section,
   Lecture,
   Enrollment,
-  Review,
   User,
 } from "../models/index.js";
 import { getPagination, getPaginatedResponse } from "../utils/pagination.js";

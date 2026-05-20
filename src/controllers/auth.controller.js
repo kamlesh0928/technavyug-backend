@@ -53,7 +53,7 @@ const register = async (req, res) => {
         "Verify your email",
         verificationEmailTemplate(user.name, verificationUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send verification email, but user was created", {
         userId: user.id,
       });
@@ -343,7 +343,7 @@ const forgotPassword = async (req, res) => {
         "Reset Password",
         resetPasswordTemplate(user.name, resetUrl),
       );
-    } catch (emailError) {
+    } catch {
       Logger.warn("Failed to send password reset email", { email });
     }
 
@@ -433,7 +433,7 @@ const updateProfile = async (req, res) => {
 
     await user.save();
 
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     Logger.info("User profile updated", { userId: user.id });
     res
       .status(200)
@@ -506,7 +506,7 @@ const deleteAccount = async (req, res) => {
 
 const googleLogin = async (req, res) => {
   try {
-    const { idToken, role } = req.body;
+    const { idToken, role: _role } = req.body;
 
     if (!idToken) {
       return res.status(400).json({ message: "Firebase ID token is required" });
@@ -616,7 +616,7 @@ const updateRole = async (req, res) => {
     user.role = role;
     await user.save();
 
-    const { password, ...userData } = user.toJSON();
+    const { password: _password, ...userData } = user.toJSON();
     Logger.info("User completed role selection", { userId: user.id, role });
     res
       .status(200)
