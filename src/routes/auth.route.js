@@ -55,6 +55,7 @@ router.post(
 router.get("/me", authenticate, authController.getMe);
 
 router.post(
+
   "/add-password",
   authenticate,
   body("password")

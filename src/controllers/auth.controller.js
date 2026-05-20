@@ -35,6 +35,7 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: "Student", // Default to Student role
       authProvider: "local",
+
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -192,6 +193,7 @@ const login = async (req, res) => {
         message:
           "This account was created using Google Sign-In. Please login with Google or add a password first.",
       });
+     
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -588,7 +590,6 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // Verify Firebase token
     let decodedToken;
 
     try {
@@ -605,13 +606,9 @@ const googleLogin = async (req, res) => {
 
     const { email, name, picture, uid } = decodedToken;
 
-    let user = await User.findOne({
-      where: { email },
-    });
-
+    let user = await User.findOne({ where: { email } });
     let isNewUser = false;
 
-    // CREATE NEW USER
     if (!user) {
       isNewUser = true;
 
@@ -630,7 +627,6 @@ const googleLogin = async (req, res) => {
         userId: user.id,
       });
     } else {
-      // BLOCK CHECK
       if (user.status === "Blocked") {
         Logger.warn("Blocked user attempted Google login", {
           email,
@@ -641,23 +637,13 @@ const googleLogin = async (req, res) => {
         });
       }
 
-      // LINK GOOGLE ACCOUNT IF NOT LINKED
-      if (!user.googleId) {
-        user.googleId = uid;
-      }
-
-      // UPDATE AUTH PROVIDER
-      if (!user.authProvider) {
-        user.authProvider = "google";
-      }
-
-      // UPDATE AVATAR
-      if (!user.avatar && picture) {
-        user.avatar = picture;
-      }
+      if (!user.googleId) user.googleId = uid;
+      if (!user.authProvider) user.authProvider = "google";
+      if (!user.avatar && picture) user.avatar = picture;
 
       user.emailVerified = true;
       user.lastLoginAt = new Date();
+
       await user.save();
 
       Logger.info("Existing user logged in via Google", {
@@ -665,9 +651,9 @@ const googleLogin = async (req, res) => {
       });
     }
 
-    // JWT TOKENS
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user, true);
+
     const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000;
 
     await RefreshToken.create({
@@ -685,9 +671,7 @@ const googleLogin = async (req, res) => {
 
     return res.status(200).json({
       accessToken,
-
       refreshToken,
-
       user: {
         id: user.id,
         name: user.name,

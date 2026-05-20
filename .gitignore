@@ -39,4 +39,7 @@ Thumbs.db
 .vscode/
 *.swp
 
+
 src/config/serviceAccountKey.json
+
+
