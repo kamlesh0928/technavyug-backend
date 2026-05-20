@@ -35,7 +35,6 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: "Student", // Default to Student role
       authProvider: "local",
-
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -193,7 +192,6 @@ const login = async (req, res) => {
         message:
           "This account was created using Google Sign-In. Please login with Google or add a password first.",
       });
-     
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -335,7 +333,6 @@ const logout = async (req, res) => {
 const addPassword = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const { password } = req.body;
 
     if (!password) {
@@ -479,15 +476,16 @@ const resetPassword = async (req, res) => {
 
 const getMe = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ["password"] },
-    });
+    const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ data: user });
+    const { password, ...userData } = user.toJSON();
+    userData.passwordSet = !!password;
+
+    res.status(200).json({ data: userData });
   } catch (error) {
     Logger.error("Error fetching user profile", error);
     res.status(500).json({ message: "Internal Server Error" });
