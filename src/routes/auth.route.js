@@ -55,6 +55,17 @@ router.post(
 router.get("/me", authenticate, authController.getMe);
 
 router.post(
+
+  "/add-password",
+  authenticate,
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters"),
+  validate,
+  authController.addPassword,
+);
+
+router.post(
   "/update-role",
   authenticate,
   body("role").isIn(["Student", "Instructor"]).withMessage("Invalid role"),

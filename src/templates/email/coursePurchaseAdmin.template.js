@@ -37,7 +37,7 @@ const coursePurchaseAdminTemplate = (
 
       <hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
       <p style="font-size:12px;color:#999;text-align:center;">
-        &copy; ${new Date().getFullYear()} Technavyug Education. Admin Notification.
+        &copy; ${new Date().getFullYear()} Technavyug Pvt. Ltd. Admin Notification.
       </p>
     </div>
   </div>

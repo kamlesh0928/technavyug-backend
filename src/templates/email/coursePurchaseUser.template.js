@@ -31,7 +31,7 @@ const coursePurchaseUserTemplate = (name, courseName, amount, coursesUrl) => {
       <hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
 
       <p style="font-size:12px;color:#999;">
-        &copy; ${new Date().getFullYear()} Technavyug Education. All rights reserved.
+        &copy; ${new Date().getFullYear()} Technavyug Pvt. Ltd. All rights reserved.
       </p>
 
     </div>

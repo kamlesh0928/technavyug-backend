@@ -34,6 +34,8 @@ const register = async (req, res) => {
       email,
       password: hashedPassword,
       role: "Student", // Default to Student role
+      authProvider: "local",
+
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -187,16 +189,21 @@ const login = async (req, res) => {
     }
 
     if (!user.password) {
-      Logger.warn("Login attempt with email for a Google-created account", { email });
-      return res.status(400).json({ message: "This account was created using Google. Please use Google Sign-In or reset your password." });
+      return res.status(400).json({
+        message:
+          "This account was created using Google Sign-In. Please login with Google or add a password first.",
+      });
+     
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
       Logger.warn("Invalid password attempt", { email });
-      return res
-        .status(401)
-        .json({ message: "Email or password is incorrect" });
+
+      return res.status(401).json({
+        message: "Email or password is incorrect",
+      });
     }
 
     if (user.emailVerified == 0) {
@@ -239,6 +246,9 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+
+        authProvider: user.authProvider,
+        passwordSet: !!user.password,
       },
     });
   } catch (error) {
@@ -319,6 +329,67 @@ const logout = async (req, res) => {
   } catch (error) {
     Logger.error("Error during user logout", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const addPassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        message: "Password is required",
+      });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // Prevent overwrite
+    if (user.password) {
+      return res.status(400).json({
+        message: "Password already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    Logger.info("Password added successfully", {
+      userId: user.id,
+    });
+
+    res.status(200).json({
+      message: "Password added successfully",
+
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar,
+
+        authProvider: user.authProvider,
+        passwordSet: true,
+        googleId: user.googleId,
+      },
+    });
+  } catch (error) {
+    Logger.error("Error adding password", error);
+
+    res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -511,61 +582,77 @@ const deleteAccount = async (req, res) => {
 
 const googleLogin = async (req, res) => {
   try {
-    const { idToken, role: _role } = req.body;
+    const { idToken } = req.body;
 
     if (!idToken) {
-      return res.status(400).json({ message: "Firebase ID token is required" });
+      return res.status(400).json({
+        message: "Firebase ID token is required",
+      });
     }
 
-    // Verify token with Firebase Admin
     let decodedToken;
+
     try {
       decodedToken = await admin.auth().verifyIdToken(idToken);
     } catch (firebaseError) {
-      Logger.warn("Invalid Firebase token", { error: firebaseError.message });
-      return res.status(401).json({ message: "Invalid Google token" });
+      Logger.warn("Invalid Firebase token", {
+        error: firebaseError.message,
+      });
+
+      return res.status(401).json({
+        message: "Invalid Google token",
+      });
     }
 
     const { email, name, picture, uid } = decodedToken;
 
-    // Find or create user
     let user = await User.findOne({ where: { email } });
     let isNewUser = false;
 
     if (!user) {
       isNewUser = true;
-      // Create new user with Student role directly
+
       user = await User.create({
         name: name || "Google User",
-        email: email,
+        email,
         googleId: uid,
-        emailVerified: true, // Google emails are already verified
+        authProvider: "google",
+        emailVerified: true,
         avatar: picture,
-        role: "Student", // Default to Student role directly
+        role: "Student",
+        lastLoginAt: new Date(),
       });
-      Logger.info("New user registered via Google", { userId: user.id });
+
+      Logger.info("New user registered via Google", {
+        userId: user.id,
+      });
     } else {
-      // Update existing user with googleId if they didn't have one
-      if (!user.googleId) {
-        user.googleId = uid;
+      if (user.status === "Blocked") {
+        Logger.warn("Blocked user attempted Google login", {
+          email,
+        });
+
+        return res.status(403).json({
+          message: "Account has been blocked",
+        });
       }
-      if (!user.avatar && picture) {
-        user.avatar = picture;
-      }
+
+      if (!user.googleId) user.googleId = uid;
+      if (!user.authProvider) user.authProvider = "google";
+      if (!user.avatar && picture) user.avatar = picture;
+
       user.emailVerified = true;
       user.lastLoginAt = new Date();
+
       await user.save();
-      Logger.info("Existing user logged in via Google", { userId: user.id });
+
+      Logger.info("Existing user logged in via Google", {
+        userId: user.id,
+      });
     }
 
-    if (user.status === "Blocked") {
-      Logger.warn("Login attempt by blocked user via Google", { email });
-      return res.status(403).json({ message: "Account has been blocked" });
-    }
-
-    // Generate our JWT tokens
     const accessToken = generateAccessToken(user);
-    const refreshToken = generateRefreshToken(user, true); // Remember me by default for Google Auth
+    const refreshToken = generateRefreshToken(user, true);
 
     const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000;
 
@@ -582,7 +669,7 @@ const googleLogin = async (req, res) => {
       maxAge: refreshTokenMaxAge,
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       accessToken,
       refreshToken,
       user: {
@@ -591,12 +678,18 @@ const googleLogin = async (req, res) => {
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+        authProvider: user.authProvider,
+        passwordSet: !!user.password,
+        emailVerified: user.emailVerified,
       },
       isNewUser,
     });
   } catch (error) {
     Logger.error("Error during Google login", error);
-    res.status(500).json({ message: "Internal Server Error" });
+
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
   }
 };
 
@@ -639,6 +732,7 @@ export default {
   googleLogin,
   refreshAccessToken,
   logout,
+  addPassword,
   forgotPassword,
   resetPassword,
   getMe,

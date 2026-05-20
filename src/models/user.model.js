@@ -25,6 +25,10 @@ const User = sequelize.define("User", {
     allowNull: true,
     unique: true,
   },
+  authProvider: {
+    type: DataTypes.ENUM("local", "google"),
+    defaultValue: "local",
+  },
   role: {
     type: DataTypes.ENUM(
       "Student",

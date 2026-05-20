@@ -45,7 +45,7 @@ const enrollmentSuccessTemplate = (name, courseName, coursesUrl) => {
       <hr style="margin:30px 0; border:0; border-top:1px solid #eee;">
 
       <p style="font-size:12px;color:#999;">
-        © ${new Date().getFullYear()} Technavyug Education. All rights reserved.
+        © ${new Date().getFullYear()} Technavyug Pvt. Ltd. All rights reserved.
       </p>
 
     </div>
