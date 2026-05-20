@@ -5,13 +5,28 @@ import { authenticate, authorize } from "../../middlewares/auth.middleware.js";
 const router = express.Router();
 
 router.use(authenticate);
-router.use(authorize("Admin", "Sub Admin"));
 
-router.get("/", userController.listUsers);
-router.get("/:id", userController.getUserById);
-router.put("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
-router.patch("/:id/block", userController.blockUser);
-router.patch("/:id/unblock", userController.unblockUser);
+// Read-only access for all admins
+router.get(
+  "/",
+  authorize("Super Admin", "Admin", "Sub Admin"),
+  userController.listUsers,
+);
+router.get(
+  "/:id",
+  authorize("Super Admin", "Admin", "Sub Admin"),
+  userController.getUserById,
+);
+
+// Write/CRUD access for Super Admin ONLY
+router.post("/", authorize("Super Admin"), userController.createUser);
+router.put("/:id", authorize("Super Admin"), userController.updateUser);
+router.delete("/:id", authorize("Super Admin"), userController.deleteUser);
+router.patch("/:id/block", authorize("Super Admin"), userController.blockUser);
+router.patch(
+  "/:id/unblock",
+  authorize("Super Admin"),
+  userController.unblockUser,
+);
 
 export default router;

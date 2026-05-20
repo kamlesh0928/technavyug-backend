@@ -79,9 +79,7 @@ const enrollInCourse = async (req, res) => {
       try {
         const user = await User.findByPk(req.user.id);
         const frontendUrl =
-          process.env.FRONTEND_URL_1 ||
-          process.env.FRONTEND_URL_2 ||
-          "http://localhost:5173";
+          process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2;
         const myLearningUrl = `${frontendUrl}/student/courses`;
 
         await sendEmail(

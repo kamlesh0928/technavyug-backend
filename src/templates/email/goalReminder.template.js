@@ -51,7 +51,7 @@ const goalReminderTemplate = (
             : `<p style="font-size:14px;color:#dc2626;font-weight:bold;">⚡ Time to pick up the pace! You can still make it!</p>`
       }
 
-      <a href="${process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2 || "http://localhost:5173"}/student"
+      <a href="${process.env.FRONTEND_URL_1 || process.env.FRONTEND_URL_2}/student"
          style="
            display:inline-block;
            padding:14px 28px;

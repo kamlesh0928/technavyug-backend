@@ -38,3 +38,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Firebase service account key
+src/config/serviceAccountKey.json

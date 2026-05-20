@@ -4,6 +4,8 @@ import fs from "fs";
 import path from "path";
 import { promisify } from "util";
 
+import Logger from "../utils/logger.js";
+
 const unlinkAsync = promisify(fs.unlink);
 
 const storage = multer.diskStorage({
@@ -148,7 +150,7 @@ export const cleanupFile = async (filePath) => {
       await unlinkAsync(filePath);
     }
   } catch (error) {
-    console.error(`Cleanup failed for ${filePath}:`, error);
+    Logger.error(`Cleanup failed for ${filePath}:`, error);
   }
 };
 

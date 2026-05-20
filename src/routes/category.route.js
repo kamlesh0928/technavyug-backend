@@ -14,7 +14,7 @@ router.get("/:id", categoryController.getCategoryById);
 router.post(
   "/",
   authenticate,
-  authorize("Admin", "Sub Admin", "Instructor"),
+  authorize("Super Admin", "Admin", "Sub Admin", "Instructor"),
   body("name").notEmpty().withMessage("Category name is required"),
   validate,
   categoryController.createCategory,
@@ -23,14 +23,14 @@ router.post(
 router.put(
   "/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   categoryController.updateCategory,
 );
 
 router.delete(
   "/:id",
   authenticate,
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   categoryController.deleteCategory,
 );
 
