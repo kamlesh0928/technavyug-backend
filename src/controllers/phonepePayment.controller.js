@@ -743,7 +743,7 @@ const getTransaction = async (req, res) => {
       return res.status(404).json({ message: "Transaction not found" });
     if (
       transaction.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     )
       return res.status(403).json({ message: "Not authorized" });
 

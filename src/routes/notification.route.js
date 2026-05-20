@@ -18,7 +18,7 @@ router.delete("/:id", notificationController.deleteNotification);
 // Admin: send notification
 router.post(
   "/send",
-  authorize("Admin", "Sub Admin"),
+  authorize("Super Admin", "Admin", "Sub Admin"),
   body("title").notEmpty().withMessage("Title is required"),
   body("message").notEmpty().withMessage("Message is required"),
   validate,

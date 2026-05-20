@@ -154,7 +154,7 @@ const deleteReview = async (req, res) => {
     // Owner or admin can delete
     if (
       review.userId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
     ) {
       return res
         .status(403)

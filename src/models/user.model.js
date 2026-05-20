@@ -31,6 +31,7 @@ const User = sequelize.define("User", {
       "Instructor",
       "Admin",
       "Sub Admin",
+      "Super Admin",
       "Guest",
     ),
     defaultValue: "Student",

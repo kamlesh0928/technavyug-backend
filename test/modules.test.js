@@ -63,7 +63,7 @@ describe("Admin User Management", () => {
   let admin, student, token;
 
   beforeEach(async () => {
-    admin = await createUser({ role: "Admin", email: "admin@test.com" });
+    admin = await createUser({ role: "Super Admin", email: "admin@test.com" });
     student = await createUser({ role: "Student", email: "student@test.com" });
     token = getAuthToken(admin);
   });

@@ -184,7 +184,7 @@ const updateCourse = async (req, res) => {
     // Only the course instructor or an admin can update
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res
         .status(403)
@@ -249,7 +249,7 @@ const deleteCourse = async (req, res) => {
 
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res
         .status(403)
@@ -279,7 +279,7 @@ const createSection = async (req, res) => {
 
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -314,7 +314,7 @@ const updateSection = async (req, res) => {
 
     if (
       section.Course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -346,7 +346,7 @@ const deleteSection = async (req, res) => {
 
     if (
       section.Course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -372,7 +372,7 @@ const reorderSections = async (req, res) => {
 
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -408,7 +408,7 @@ const createLecture = async (req, res) => {
     const course = section.Course;
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -539,7 +539,9 @@ const getLecture = async (req, res) => {
 
       const courseId = lecture.Section.courseId;
       const isInstructor = lecture.Section.Course.instructorId === req.user.id;
-      const isAdmin = ["Admin", "Sub Admin"].includes(req.user.role);
+      const isAdmin = ["Super Admin", "Admin", "Sub Admin"].includes(
+        req.user.role,
+      );
 
       if (!isInstructor && !isAdmin) {
         const enrollment = await Enrollment.findOne({
@@ -574,7 +576,7 @@ const updateLecture = async (req, res) => {
     const course = lecture.Section.Course;
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }
@@ -627,7 +629,7 @@ const deleteLecture = async (req, res) => {
     const course = lecture.Section.Course;
     if (
       course.instructorId !== req.user.id &&
-      !["Admin", "Sub Admin"].includes(req.user.role)
+      req.user.role !== "Super Admin"
     ) {
       return res.status(403).json({ message: "Not authorized" });
     }

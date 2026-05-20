@@ -39,7 +39,10 @@ const listBlogs = async (req, res) => {
     // Admin (authenticated) sees all blogs. Public (unauthenticated) sees only published
     if (status) {
       where.status = status;
-    } else if (!req.user || !["Admin", "Sub Admin"].includes(req.user.role)) {
+    } else if (
+      !req.user ||
+      !["Super Admin", "Admin", "Sub Admin"].includes(req.user.role)
+    ) {
       where.status = "Published";
     }
 

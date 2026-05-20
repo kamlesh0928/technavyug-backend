@@ -33,7 +33,7 @@ const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: "Guest", // Force role selection after email verification and login
+      role: "Student", // Default to Student role
     });
 
     const verificationToken = crypto.randomBytes(32).toString("hex");
@@ -529,14 +529,14 @@ const googleLogin = async (req, res) => {
 
     if (!user) {
       isNewUser = true;
-      // Create new user with Guest role initially
+      // Create new user with Student role directly
       user = await User.create({
         name: name || "Google User",
         email: email,
         googleId: uid,
         emailVerified: true, // Google emails are already verified
         avatar: picture,
-        role: "Guest", // Force them to select role on next screen
+        role: "Student", // Default to Student role directly
       });
       Logger.info("New user registered via Google", { userId: user.id });
     } else {
@@ -618,7 +618,9 @@ const updateRole = async (req, res) => {
 
     const { password, ...userData } = user.toJSON();
     Logger.info("User completed role selection", { userId: user.id, role });
-    res.status(200).json({ message: "Role updated successfully", user: userData });
+    res
+      .status(200)
+      .json({ message: "Role updated successfully", user: userData });
   } catch (error) {
     Logger.error("Error updating user role", error);
     res.status(500).json({ message: "Internal Server Error" });
