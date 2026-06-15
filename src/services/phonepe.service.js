@@ -16,7 +16,7 @@ const getClient = () => {
   const clientSecret = process.env.PHONEPE_CLIENT_SECRET;
   const clientVersion = parseInt(process.env.PHONEPE_CLIENT_VERSION || "1", 10);
   const env =
-    process.env.PHONEPE_ENV === "PRODUCTION" ? Env.PRODUCTION : Env.SANDBOX;
+    process.env.PHONEPE_ENV === "Production" ? Env.PRODUCTION : Env.SANDBOX;
 
   if (!clientId || !clientSecret) {
     Logger.error(
