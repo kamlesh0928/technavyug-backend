@@ -1,8 +1,17 @@
 import crypto from "crypto";
 import { Op } from "sequelize";
-import { Order, OrderItem, Product, User } from "../models/index.js";
+import {
+  Order,
+  OrderItem,
+  Product,
+  User,
+  Transaction,
+  Course,
+} from "../models/index.js";
 import { getPagination, getPaginatedResponse } from "../utils/pagination.js";
 import Logger from "../utils/logger.js";
+import sendEmail from "../services/email.service.js";
+import orderStatusUpdateTemplate from "../templates/email/orderStatusUpdate.template.js";
 
 const GST_RATE = parseFloat(process.env.GST_RATE || 18);
 
@@ -215,6 +224,42 @@ const updateOrderStatus = async (req, res) => {
     order.status = status;
     await order.save();
 
+    const statusDescriptions = {
+      Pending: "Your order is awaiting processing.",
+      Processing: "Your order is being prepared and will be shipped soon.",
+      Shipped: "Your order has been shipped and is on its way to you.",
+      Delivered: "Your order has been delivered successfully.",
+      Cancelled: "Your order has been cancelled.",
+      Refunded:
+        "Your order has been refunded. The amount will be credited back to your account.",
+    };
+
+    // Send email asynchronously
+    (async () => {
+      try {
+        const fullOrder = await Order.findByPk(order.id, {
+          include: [
+            { model: OrderItem, as: "items", include: [{ model: Product }] },
+            { model: User },
+          ],
+        });
+        if (fullOrder && fullOrder.User) {
+          await sendEmail(
+            fullOrder.User.email,
+            `Order Status Update: ${fullOrder.orderNumber}`,
+            orderStatusUpdateTemplate(
+              fullOrder.User.name,
+              fullOrder,
+              status,
+              statusDescriptions[status],
+            ),
+          );
+        }
+      } catch (err) {
+        Logger.error("Failed to send order status update email", err);
+      }
+    })();
+
     Logger.info("Order status updated", { orderId: order.id, status });
     res
       .status(200)
@@ -257,10 +302,41 @@ const listAllOrders = async (req, res) => {
   }
 };
 
+const listAllTransactions = async (req, res) => {
+  try {
+    const { page, limit, offset } = getPagination(req.query);
+    const { status, search } = req.query;
+
+    const where = { paymentType: "course" };
+    if (status) where.status = status;
+    if (search) where.merchantOrderId = { [Op.like]: `%${search}%` };
+
+    const { count, rows } = await Transaction.findAndCountAll({
+      where,
+      include: [
+        { model: User, attributes: ["id", "name", "email"] },
+        {
+          model: Course,
+          attributes: ["id", "title", "slug", "price", "thumbnail"],
+        },
+      ],
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.status(200).json(getPaginatedResponse(rows, count, page, limit));
+  } catch (error) {
+    Logger.error("Error listing all transactions", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export default {
   createOrder,
   getMyOrders,
   getOrderById,
   updateOrderStatus,
   listAllOrders,
+  listAllTransactions,
 };

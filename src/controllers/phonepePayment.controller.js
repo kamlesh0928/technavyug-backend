@@ -203,7 +203,7 @@ const initiateCoursePurchase = async (req, res) => {
     });
     if (pendingTxn) {
       // Re-initiate payment for the existing pending transaction
-      const redirectUrl = `${getFrontendUrl()}/student/payment-status?merchantOrderId=${pendingTxn.merchantOrderId}&type=course`;
+      const redirectUrl = `${getFrontendUrl()}/payment-status?merchantOrderId=${pendingTxn.merchantOrderId}&type=course`;
       const amountInPaise = Math.round(parseFloat(pendingTxn.amount) * 100);
       const ppResponse = await phonepeService.initiatePayment(
         pendingTxn.merchantOrderId,
@@ -254,7 +254,7 @@ const initiateCoursePurchase = async (req, res) => {
       couponId,
     });
 
-    const redirectUrl = `${getFrontendUrl()}/student/payment-status?merchantOrderId=${merchantOrderId}&type=course`;
+    const redirectUrl = `${getFrontendUrl()}/payment-status?merchantOrderId=${merchantOrderId}&type=course`;
     const amountInPaise = Math.round(finalAmount * 100);
 
     const ppResponse = await phonepeService.initiatePayment(
@@ -514,7 +514,7 @@ const initiateOrderPayment = async (req, res) => {
       couponId,
     });
 
-    const redirectUrl = `${getFrontendUrl()}/student/payment-status?merchantOrderId=${merchantOrderId}&type=product`;
+    const redirectUrl = `${getFrontendUrl()}/payment-status?merchantOrderId=${merchantOrderId}&type=product`;
     const amountInPaise = Math.round(totalAmount * 100);
 
     const ppResponse = await phonepeService.initiatePayment(

@@ -1,4 +1,9 @@
-const orderConfirmationUserTemplate = (name, order) => {
+const orderStatusUpdateTemplate = (
+  name,
+  order,
+  newStatus,
+  statusDescription,
+) => {
   const items = order.items || [];
   const itemRows = items
     .map(
@@ -37,38 +42,54 @@ const orderConfirmationUserTemplate = (name, order) => {
   const discount = parseFloat(order.discountAmount || 0);
   const total = parseFloat(order.totalAmount || 0).toFixed(2);
 
+  // Determine gradient colors based on status
+  let bgGradient = "linear-gradient(135deg, #64748b 0%, #475569 100%)"; // Default gray
+  let textColor = "#f8fafc";
+  let subTextColor = "#cbd5e1";
+
+  if (newStatus === "Processing") {
+    bgGradient = "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"; // Blue
+    textColor = "#ffffff";
+    subTextColor = "#bfdbfe";
+  } else if (newStatus === "Shipped") {
+    bgGradient = "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)"; // Indigo
+    textColor = "#ffffff";
+    subTextColor = "#c7d2fe";
+  } else if (newStatus === "Delivered") {
+    bgGradient = "linear-gradient(135deg, #059669 0%, #047857 100%)"; // Green
+    textColor = "#ffffff";
+    subTextColor = "#a7f3d0";
+  } else if (newStatus === "Cancelled" || newStatus === "Refunded") {
+    bgGradient = "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"; // Red
+    textColor = "#ffffff";
+    subTextColor = "#fecaca";
+  }
+
   return `
   <div style="font-family: 'Segoe UI', Arial, sans-serif; background:#f1f5f9; padding:40px 20px;">
     <div style="max-width:600px;margin:auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
       <!-- Header -->
-      <div style="background:linear-gradient(135deg, #059669 0%, #047857 100%); padding:28px; text-align:center;">
-        <div style="width:56px; height:56px; background:rgba(255,255,255,0.2); border-radius:50%; margin:0 auto 12px; display:flex; align-items:center; justify-content:center;">
-          <span style="font-size:28px;">✓</span>
-        </div>
-        <h2 style="margin:0 0 4px 0; color:#ffffff; font-size:22px; font-weight:800;">Order Confirmed!</h2>
-        <p style="margin:0; color:#a7f3d0; font-size:13px;">Your order has been placed successfully</p>
+      <div style="background:${bgGradient}; padding:28px; text-align:center;">
+        <h2 style="margin:0 0 4px 0; color:${textColor}; font-size:22px; font-weight:800;">Order Status Update</h2>
+        <p style="margin:0; color:${subTextColor}; font-size:13px;">${newStatus}</p>
       </div>
 
       <div style="padding:30px;">
 
         <p style="font-size:15px;color:#374151;line-height:1.6; margin:0 0 20px 0;">
           Hi <b>${name}</b>,<br><br>
-          Thank you for your purchase! Your order 
-            <b style="color:#059669;">
+          There is an update regarding your order 
+            <b style="color:#0f2c59;">
               ${order.orderNumber}
-            </b> has been confirmed.
-
-            ${order.invoiceNumber ? `<br>Invoice: <b>${order.invoiceNumber}</b>` : ""}
-
-            ${order.paymentId ? `<br>Transaction ID: <b>${order.paymentId}</b>` : ""}
-
-            ${
-              order.paymentMethod
-                ? `<br>Payment Method: <b>${order.paymentMethod}</b>`
-                : ""
-            }
+            </b>.
         </p>
+        
+        <div style="background:#f8fafc; border-left: 4px solid #0f2c59; border-radius:4px; padding:15px; margin:20px 0;">
+          <p style="margin:0; font-size:14px; color:#374151; font-weight:500;">
+            ${statusDescription}
+          </p>
+        </div>
 
         <!-- Items Table -->
         <table style="width:100%; border-collapse:collapse; margin:20px 0;">
@@ -125,8 +146,7 @@ const orderConfirmationUserTemplate = (name, order) => {
         }
 
         <p style="font-size:13px;color:#6b7280;margin-top:25px;line-height:1.6;">
-          We'll notify you when your order ships. A detailed tax invoice has been sent separately.<br>
-          Need help? Contact us at <a href="mailto:support@technavyug.com" style="color:#2563eb;">support@technavyug.com</a>
+          Need help with your order? Contact us at <a href="mailto:support@technavyug.com" style="color:#2563eb;">support@technavyug.com</a>
         </p>
 
       </div>
@@ -143,4 +163,4 @@ const orderConfirmationUserTemplate = (name, order) => {
   `;
 };
 
-export default orderConfirmationUserTemplate;
+export default orderStatusUpdateTemplate;

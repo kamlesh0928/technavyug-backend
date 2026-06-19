@@ -17,7 +17,14 @@ const invoiceUserTemplate = (user, order, companyInfo) => {
     )
     .join("");
 
-  const addr = order.shippingAddress || {};
+  let addr = order.shippingAddress || {};
+  if (typeof addr === "string") {
+    try {
+      addr = JSON.parse(addr);
+    } catch (e) {
+      addr = {};
+    }
+  }
   const addressStr = [
     addr.name,
     addr.addressLine1,
