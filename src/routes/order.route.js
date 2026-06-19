@@ -31,6 +31,12 @@ router.get(
   orderController.listAllOrders,
 );
 
+router.get(
+  "/transactions",
+  authorize("Super Admin", "Admin", "Sub Admin"),
+  orderController.listAllTransactions,
+);
+
 router.get("/:id", orderController.getOrderById);
 
 router.patch(

@@ -13,7 +13,14 @@ const orderConfirmationAdminTemplate = (userName, userEmail, order) => {
     )
     .join("");
 
-  const addr = order.shippingAddress || {};
+  let addr = order.shippingAddress || {};
+  if (typeof addr === "string") {
+    try {
+      addr = JSON.parse(addr);
+    } catch (e) {
+      addr = {};
+    }
+  }
   const addressStr = [
     addr.name,
     addr.phone,
