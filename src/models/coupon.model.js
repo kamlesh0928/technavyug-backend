@@ -14,6 +14,11 @@ const Coupon = sequelize.define(
       allowNull: false,
       unique: true,
     },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: "Optional description or notes about this coupon",
+    },
     discountType: {
       type: DataTypes.ENUM("percentage", "flat"),
       allowNull: false,
@@ -32,9 +37,16 @@ const Coupon = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
     },
+    startDate: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment:
+        "Coupon becomes valid from this datetime. null = immediately valid",
+    },
     expiryDate: {
-      type: DataTypes.DATEONLY,
+      type: DataTypes.DATE,
       allowNull: false,
+      comment: "Coupon expires at this datetime",
     },
     usageLimit: {
       type: DataTypes.INTEGER,

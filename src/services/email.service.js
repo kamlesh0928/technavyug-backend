@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import Logger from "../utils/logger.js";
+import { getFromAddress } from "../config/email.config.js";
 
 if (
   !process.env.SMTP_HOST ||
@@ -20,12 +21,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendEmail = async (to, subject, htmlContent) => {
+const sendEmail = async (to, subject, htmlContent, fromType = "noreply") => {
   try {
     const mailOptions = {
-      from:
-        process.env.SMTP_FROM_EMAIL ||
-        '"Technavyug Education" <noreply@technavyug.com>',
+      from: getFromAddress(fromType),
       to,
       subject,
       html: htmlContent,
