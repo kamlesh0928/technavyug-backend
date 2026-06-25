@@ -24,6 +24,21 @@ import invoiceUserTemplate from "../templates/email/invoiceUser.template.js";
 
 import Logger from "../utils/logger.js";
 
+// Helper: Increment coupon usage and auto-deactivate if limit is reached
+const incrementCouponUsage = async (couponId) => {
+  await Coupon.increment("usedCount", { where: { id: couponId } });
+  const coupon = await Coupon.findByPk(couponId);
+  if (
+    coupon &&
+    coupon.usageLimit !== null &&
+    coupon.usedCount >= coupon.usageLimit
+  ) {
+    coupon.isActive = false;
+    await coupon.save();
+    Logger.info("Coupon auto-deactivated (usage limit reached)", { couponId });
+  }
+};
+
 const GST_RATE = parseFloat(process.env.GST_RATE || 18);
 
 const generateMerchantOrderId = (prefix) => {
@@ -73,8 +88,16 @@ const applyCoupon = async (couponCode, subtotal, userId, applicableTo) => {
 
   if (!coupon || !coupon.isActive) return { discountAmount: 0, couponId: null };
 
-  const today = new Date().toISOString().split("T")[0];
-  if (coupon.expiryDate < today) return { discountAmount: 0, couponId: null };
+  const now = new Date();
+
+  // Check if the coupon has started
+  if (coupon.startDate && new Date(coupon.startDate) > now)
+    return { discountAmount: 0, couponId: null };
+
+  // Check expiry with full datetime comparison
+  if (new Date(coupon.expiryDate) < now)
+    return { discountAmount: 0, couponId: null };
+
   if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit)
     return { discountAmount: 0, couponId: null };
   if (coupon.applicableTo !== "all" && coupon.applicableTo !== applicableTo)
@@ -84,6 +107,13 @@ const applyCoupon = async (couponCode, subtotal, userId, applicableTo) => {
     where: { couponId: coupon.id, userId },
   });
   if (existing) return { discountAmount: 0, couponId: null };
+
+  // Check minimum order amount on base subtotal
+  if (
+    coupon.minOrderAmount &&
+    parseFloat(subtotal) < parseFloat(coupon.minOrderAmount)
+  )
+    return { discountAmount: 0, couponId: null };
 
   let discount;
   if (coupon.discountType === "percentage") {
@@ -219,21 +249,29 @@ const initiateCoursePurchase = async (req, res) => {
       });
     }
 
-    // Apply coupon
+    // Apply coupon on course base price
     const { discountAmount, couponId } = await applyCoupon(
       couponCode,
       price,
       req.user.id,
       "course",
     );
-    const finalAmount = Math.max(0, price - discountAmount);
+    const discountedBase = Math.max(0, price - discountAmount);
+
+    // Calculate GST on discounted base price
+    const gstAmount =
+      Math.round(((discountedBase * GST_RATE) / 100) * 100) / 100;
+    const finalAmount = Math.round((discountedBase + gstAmount) * 100) / 100;
+
+    const originalGST = Math.round(((price * GST_RATE) / 100) * 100) / 100;
+    const originalAmountWithGST = Math.round((price + originalGST) * 100) / 100;
 
     if (finalAmount <= 0) {
       // Free after coupon - grant access directly
       await Enrollment.create({ userId: req.user.id, courseId });
       await Course.increment("totalEnrollments", { where: { id: courseId } });
       if (couponId) {
-        await Coupon.increment("usedCount", { where: { id: couponId } });
+        await incrementCouponUsage(couponId);
       }
       return res.status(200).json({
         message: "Course enrolled successfully (coupon covered full amount)",
@@ -247,7 +285,7 @@ const initiateCoursePurchase = async (req, res) => {
       merchantOrderId,
       userId: req.user.id,
       amount: finalAmount,
-      originalAmount: price,
+      originalAmount: originalAmountWithGST,
       status: "Pending",
       paymentType: "course",
       courseId,
@@ -331,9 +369,7 @@ const getCoursePurchaseStatus = async (req, res) => {
           where: { couponId: transaction.couponId, userId: transaction.userId },
           defaults: { transactionId: transaction.id },
         });
-        await Coupon.increment("usedCount", {
-          where: { id: transaction.couponId },
-        });
+        await incrementCouponUsage(transaction.couponId);
       }
 
       // Send emails asynchronously
@@ -456,19 +492,25 @@ const initiateOrderPayment = async (req, res) => {
       });
     }
 
-    // Apply coupon (discount applied on subtotal + GST total)
-    const amountBeforeDiscount = subtotal + totalGST;
+    // Apply coupon on base subtotal (WITHOUT GST)
     const { discountAmount, couponId } = await applyCoupon(
       couponCode,
-      amountBeforeDiscount,
+      subtotal,
       req.user.id,
       "product",
     );
-    const totalAmount = Math.max(0, amountBeforeDiscount - discountAmount);
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
 
-    // GST split: CGST = 9%, SGST = 9%
+    // Calculate GST on discounted subtotal
+    totalGST = Math.round(((discountedSubtotal * GST_RATE) / 100) * 100) / 100;
     const cgstAmount = Math.round((totalGST / 2) * 100) / 100;
     const sgstAmount = Math.round((totalGST - cgstAmount) * 100) / 100;
+
+    const totalAmount = Math.round((discountedSubtotal + totalGST) * 100) / 100;
+
+    const originalGST = Math.round(((subtotal * GST_RATE) / 100) * 100) / 100;
+    const amountBeforeDiscount =
+      Math.round((subtotal + originalGST) * 100) / 100;
 
     // Create order with Pending status (stock not reduced yet)
     const shippingAddressJson = {
@@ -603,9 +645,7 @@ const getOrderPaymentStatus = async (req, res) => {
           where: { couponId: transaction.couponId, userId: transaction.userId },
           defaults: { transactionId: transaction.id },
         });
-        await Coupon.increment("usedCount", {
-          where: { id: transaction.couponId },
-        });
+        await incrementCouponUsage(transaction.couponId);
       }
 
       // Send all order emails asynchronously
@@ -699,9 +739,7 @@ const handleWebhook = async (req, res) => {
           where: { couponId: transaction.couponId, userId: transaction.userId },
           defaults: { transactionId: transaction.id },
         });
-        await Coupon.increment("usedCount", {
-          where: { id: transaction.couponId },
-        });
+        await incrementCouponUsage(transaction.couponId);
       }
     } else if (verifiedState === "FAILED") {
       transaction.status = "Failed";

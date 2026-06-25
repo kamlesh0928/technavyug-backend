@@ -57,7 +57,7 @@ const submitContactForm = async (req, res) => {
     `;
 
     try {
-      await sendEmail(email, userSubject, userContent);
+      await sendEmail(email, userSubject, userContent, "support");
     } catch (emailError) {
       Logger.error("Failed to send confirmation email to user", emailError);
     }

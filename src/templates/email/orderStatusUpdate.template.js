@@ -5,6 +5,7 @@ const orderStatusUpdateTemplate = (
   statusDescription,
 ) => {
   const items = order.items || [];
+
   const itemRows = items
     .map(
       (item) => `
@@ -19,13 +20,15 @@ const orderStatusUpdateTemplate = (
     .join("");
 
   let addr = order.shippingAddress || {};
+
   if (typeof addr === "string") {
     try {
       addr = JSON.parse(addr);
-    } catch (e) {
+    } catch {
       addr = {};
     }
   }
+
   const addressStr = [
     addr.name,
     addr.addressLine1,

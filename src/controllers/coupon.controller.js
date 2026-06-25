@@ -26,9 +26,14 @@ const validateCoupon = async (req, res) => {
         .json({ message: "This coupon is no longer active" });
     }
 
-    // Check expiry
-    const today = new Date().toISOString().split("T")[0];
-    if (coupon.expiryDate < today) {
+    // Check if the coupon has started (startDate validation)
+    const now = new Date();
+    if (coupon.startDate && new Date(coupon.startDate) > now) {
+      return res.status(400).json({ message: "This coupon is not yet active" });
+    }
+
+    // Check expiry with full datetime comparison
+    if (new Date(coupon.expiryDate) < now) {
       return res.status(400).json({ message: "This coupon has expired" });
     }
 
@@ -54,7 +59,7 @@ const validateCoupon = async (req, res) => {
     const orderAmount = parseFloat(subtotal || 0);
     if (orderAmount < parseFloat(coupon.minOrderAmount)) {
       return res.status(400).json({
-        message: `Minimum order amount for this coupon is ${coupon.minOrderAmount}`,
+        message: `Minimum order amount for this coupon is Rs. ${coupon.minOrderAmount}`,
       });
     }
 
@@ -102,7 +107,7 @@ const validateCoupon = async (req, res) => {
   }
 };
 
-// Admin: List all coupons
+// Admin: List all coupons with remaining uses computation
 const listCoupons = async (req, res) => {
   try {
     const { page, limit, offset } = getPagination(req.query);
@@ -123,7 +128,17 @@ const listCoupons = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    res.status(200).json(getPaginatedResponse(rows, count, page, limit));
+    // Attach computed remainingUses to each coupon
+    const enriched = rows.map((coupon) => {
+      const plain = coupon.toJSON();
+      plain.remainingUses =
+        plain.usageLimit !== null
+          ? Math.max(0, plain.usageLimit - plain.usedCount)
+          : null;
+      return plain;
+    });
+
+    res.status(200).json(getPaginatedResponse(enriched, count, page, limit));
   } catch (error) {
     Logger.error("Error listing coupons", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -135,10 +150,12 @@ const createCoupon = async (req, res) => {
   try {
     const {
       code,
+      description,
       discountType,
       discountValue,
       maxDiscount,
       minOrderAmount,
+      startDate,
       expiryDate,
       usageLimit,
       applicableTo,
@@ -148,6 +165,13 @@ const createCoupon = async (req, res) => {
       return res.status(400).json({
         message:
           "code, discountType, discountValue, and expiryDate are required",
+      });
+    }
+
+    // Validate that expiryDate is after startDate if both are provided
+    if (startDate && new Date(expiryDate) <= new Date(startDate)) {
+      return res.status(400).json({
+        message: "Expiry date must be after the start date",
       });
     }
 
@@ -163,10 +187,12 @@ const createCoupon = async (req, res) => {
 
     const coupon = await Coupon.create({
       code,
+      description: description || null,
       discountType,
       discountValue,
       maxDiscount: maxDiscount || null,
       minOrderAmount: minOrderAmount || 0,
+      startDate: startDate || null,
       expiryDate,
       usageLimit: usageLimit || null,
       applicableTo: applicableTo || "all",
@@ -192,10 +218,12 @@ const updateCoupon = async (req, res) => {
 
     const allowedFields = [
       "code",
+      "description",
       "discountType",
       "discountValue",
       "maxDiscount",
       "minOrderAmount",
+      "startDate",
       "expiryDate",
       "usageLimit",
       "applicableTo",
@@ -207,6 +235,17 @@ const updateCoupon = async (req, res) => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+
+    // Validate date ordering if both are provided or being updated
+    const newStart =
+      updates.startDate !== undefined ? updates.startDate : coupon.startDate;
+    const newExpiry =
+      updates.expiryDate !== undefined ? updates.expiryDate : coupon.expiryDate;
+    if (newStart && newExpiry && new Date(newExpiry) <= new Date(newStart)) {
+      return res.status(400).json({
+        message: "Expiry date must be after the start date",
+      });
     }
 
     await coupon.update(updates);
