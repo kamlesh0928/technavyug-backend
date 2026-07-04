@@ -54,7 +54,7 @@ const Order = sequelize.define("Order", {
     type: DataTypes.STRING,
     allowNull: true,
     unique: true,
-    comment: "Auto-generated invoice number e.g. INV-2026-0001",
+    comment: "Auto-generated invoice number e.g. TNY-INV-20260704-00001",
   },
   couponCode: {
     type: DataTypes.STRING,

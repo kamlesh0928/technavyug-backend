@@ -23,6 +23,10 @@ import orderConfirmationAdminTemplate from "../templates/email/orderConfirmation
 import invoiceUserTemplate from "../templates/email/invoiceUser.template.js";
 
 import Logger from "../utils/logger.js";
+import {
+  generateOrderNumber,
+  generateInvoiceNumber,
+} from "../utils/idGenerators.js";
 
 // Helper: Increment coupon usage and auto-deactivate if limit is reached
 const incrementCouponUsage = async (couponId) => {
@@ -45,20 +49,6 @@ const generateMerchantOrderId = (prefix) => {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = crypto.randomBytes(4).toString("hex").toUpperCase();
   return `${prefix}-${ts}-${rand}`;
-};
-
-const generateOrderNumber = () => {
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = crypto.randomBytes(3).toString("hex").toUpperCase();
-  return `ORD-${ts}-${rand}`;
-};
-
-const generateInvoiceNumber = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = crypto.randomBytes(2).toString("hex").toUpperCase();
-  return `INV-${year}-${ts}${rand}`;
 };
 
 const getCompanyInfo = () => ({
@@ -524,8 +514,8 @@ const initiateOrderPayment = async (req, res) => {
     };
 
     const order = await Order.create({
-      orderNumber: generateOrderNumber(),
-      invoiceNumber: generateInvoiceNumber(),
+      orderNumber: await generateOrderNumber(),
+      invoiceNumber: null,
       userId: req.user.id,
       subtotal,
       gstAmount: totalGST,
@@ -624,6 +614,7 @@ const getOrderPaymentStatus = async (req, res) => {
       if (order) {
         order.status = "Processing";
         order.paymentId = transaction.phonepeTransactionId;
+        order.invoiceNumber = await generateInvoiceNumber();
         await order.save();
 
         // Reduce stock now
@@ -715,6 +706,7 @@ const handleWebhook = async (req, res) => {
         if (order) {
           order.status = "Processing";
           order.paymentId = transaction.phonepeTransactionId;
+          order.invoiceNumber = await generateInvoiceNumber();
           await order.save();
           const orderItems = await OrderItem.findAll({
             where: { orderId: order.id },
