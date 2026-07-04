@@ -24,6 +24,8 @@ import Transaction from "./transaction.model.js";
 import Address from "./address.model.js";
 import Coupon from "./coupon.model.js";
 import CouponUsage from "./couponUsage.model.js";
+import InvoiceCounter from "./invoiceCounter.model.js";
+import OrderCounter from "./orderCounter.model.js";
 
 // Auth Relationships
 User.hasMany(RefreshToken, { foreignKey: "userId", onDelete: "CASCADE" });
@@ -187,4 +189,6 @@ export {
   Address,
   Coupon,
   CouponUsage,
+  InvoiceCounter,
+  OrderCounter,
 };

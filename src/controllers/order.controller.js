@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { Op } from "sequelize";
 import {
   Order,
@@ -11,23 +10,13 @@ import {
 import { getPagination, getPaginatedResponse } from "../utils/pagination.js";
 import Logger from "../utils/logger.js";
 import sendEmail from "../services/email.service.js";
+import {
+  generateOrderNumber,
+  generateInvoiceNumber,
+} from "../utils/idGenerators.js";
 import orderStatusUpdateTemplate from "../templates/email/orderStatusUpdate.template.js";
 
 const GST_RATE = parseFloat(process.env.GST_RATE || 18);
-
-const generateOrderNumber = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = crypto.randomBytes(3).toString("hex").toUpperCase();
-  return `ORD-${timestamp}-${random}`;
-};
-
-const generateInvoiceNumber = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const ts = Date.now().toString(36).toUpperCase();
-  const rand = crypto.randomBytes(2).toString("hex").toUpperCase();
-  return `INV-${year}-${ts}${rand}`;
-};
 
 const createOrder = async (req, res) => {
   try {
@@ -87,8 +76,8 @@ const createOrder = async (req, res) => {
     const sgstAmount = Math.round((totalGST - cgstAmount) * 100) / 100;
 
     const order = await Order.create({
-      orderNumber: generateOrderNumber(),
-      invoiceNumber: generateInvoiceNumber(),
+      orderNumber: await generateOrderNumber(),
+      invoiceNumber: await generateInvoiceNumber(),
       userId: req.user.id,
       subtotal,
       gstAmount: totalGST,
